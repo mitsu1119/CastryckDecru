@@ -1,5 +1,6 @@
 load("sidh.sage")
 load("uvtable.sage")
+load("richelot_isogeny.sage")
 
 class CDParams:
     """
@@ -96,6 +97,10 @@ def i_isogeny(sidh_pub, P):
     Q = E_start(-x, i*y)
     return Q
 
+def is_split(C, E, Pc, P, Qc, Q, ai):
+    FromProdToJac(C, E, Pc, P, Qc, Q, ai)
+    return True
+
 # 3^iter_prime.b isogeny φ:E1 -> E で，φ(P1) = P，φ(Q1) = Q となるものは存在するか？
 def solve_D(params: CDParams, ui, vi, ker_kappa_gen, E1, P1, Q1):
     iter_prime = params.iter_prime
@@ -126,7 +131,8 @@ def solve_D(params: CDParams, ui, vi, ker_kappa_gen, E1, P1, Q1):
     
     Pc = gamma(params.start_sidh_pub.Pa)
     Qc = gamma(params.start_sidh_pub.Qa)
-    print(Pc, Qc)
+
+    print(is_split(C, params.E, Pc, params.P, Qc, params.Q, ai))
 
     return True
 
@@ -178,7 +184,7 @@ def attack(params: CDParams, iteration=1):
     print()
     next_iter_prime = SIDHPrime(ai, bi, iter_prime.f, proof=False)
 
-    ki = 0
+    ki = 5
     while True:
         kappa, ker_kappa_gen = choice_kappa(params, beta, ki)
         E1 = kappa.codomain()

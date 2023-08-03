@@ -10,7 +10,7 @@ E0 = EllipticCurve(Fpp, [0, 0, 0, 1, 0])
 
 Pa, Qa, Pb, Qb = generate_sidh_torsions(E0, prime)
 sidh_pub = SIDHPublic(prime, E0, Pa, Qa, Pb, Qb)
-skb = 1
+skb = 5
 phi_b = E0.isogeny(Pb + skb * Qb, algorithm="factored")
 
 print("[target secrets]")
