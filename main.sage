@@ -23,3 +23,4 @@ P = phi_b(Pa)
 Q = phi_b(Qa)
 
 cdparams = CDParams(sidh_pub, E, P, Q)
+attack(cdparams)
