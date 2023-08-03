@@ -20,9 +20,9 @@ class CDParams:
             assert E.base_ring() == E_start.base_ring()
             assert P in E
             assert Q in E
-            # assert P.order() == 2^iter_prime.a
-            # assert Q.order() == 2^iter_prime.a
-            # assert P.weil_pairing(Q, 2^iter_prime.a) != 1
+            assert P.order() == 2^iter_prime.a
+            assert Q.order() == 2^iter_prime.a
+            assert P.weil_pairing(Q, 2^iter_prime.a) != 1
 
             assert E_start.a_invariants() in [(0, 0, 0, 1, 0), (0, 6, 0, 1, 0)]
 
@@ -133,14 +133,37 @@ def attack(params: CDParams, iteration=1):
     print()
 
     ki = 0
-    kappa = choice_kappa(params, beta, ki)
-    E1 = kappa.codomain()
-    assert kappa.domain() == params.E_start
-    assert kappa.degree() == 3^beta
-    print(kappa)
-    print(E1)
-    print()
+    while True:
+        kappa = choice_kappa(params, beta, ki)
+        E1 = kappa.codomain()
+        assert kappa.domain() == params.E_start
+        assert kappa.degree() == 3^beta
+        print(kappa)
+        print(E1)
+        print()
+
+        P1 = kappa(2^alpha * params.start_sidh_pub.Pa)
+        Q1 = kappa(2^alpha * params.start_sidh_pub.Qa)
+        assert P1 in E1
+        assert Q1 in E1
+        assert P1.order() == 2^ai
+        assert Q1.order() == 2^ai
+
+        kappa_hat = kappa.dual()
+        assert kappa_hat.domain() == E1
+
+        alpha_diff = prev_ai - ai
+        P_dest = 2^alpha_diff * params.P
+        Q_dest = 2^alpha_diff * params.Q
+        assert P_dest in params.E
+        assert Q_dest in params.E
+        assert P_dest.order() == 2^ai
+        assert Q_dest.order() == 2^ai
+        assert P_dest.weil_pairing(Q_dest, 2^ai) != 1
+
+        break
+        ki += 1
 
     next_iter_prime = SIDHPrime(ai, bi, iter_prime.f, proof=False)
-    next_params = CDParams(params.start_sidh_pub, params.E, params.P, params.Q, iter_prime=next_iter_prime, betas=params.betas+[beta], ks=params.ks+[ki])
+    next_params = CDParams(params.start_sidh_pub, params.E, P_dest, Q_dest, iter_prime=next_iter_prime, betas=params.betas+[beta], ks=params.ks+[ki])
     attack(next_params, iteration=iteration+1)
