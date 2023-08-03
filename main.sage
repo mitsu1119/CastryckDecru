@@ -1,4 +1,4 @@
-load("sidh.sage")
+load("attack.sage")
 
 a = 33
 b = 19
@@ -21,3 +21,5 @@ print()
 E = phi_b.codomain()
 P = phi_b(Pa)
 Q = phi_b(Qa)
+
+cdparams = CDParams(sidh_pub, E, P, Q)
