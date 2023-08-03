@@ -83,7 +83,52 @@ def choice_kappa(params: CDParams, beta, choice):
     R = 3^bi * (params.start_sidh_pub.Pb + Q_coef * params.start_sidh_pub.Qb)
     kappa = params.E_start.isogeny(R, algorithm="factored")
 
-    return kappa
+    return kappa, R
+
+# i_isogeny(i_isogeny(P)) == -P
+def i_isogeny(sidh_pub, P):
+    E_start = sidh_pub.E0
+    prime = sidh_pub.prime
+    assert P in E_start
+
+    Fpp = E_start.base_ring()
+    x, y = P.xy()
+    Q = E_start(-x, i*y)
+    return Q
+
+# 3^iter_prime.b isogeny φ:E1 -> E で，φ(P1) = P，φ(Q1) = Q となるものは存在するか？
+def solve_D(params: CDParams, ui, vi, ker_kappa_gen, E1, P1, Q1):
+    iter_prime = params.iter_prime
+    ai = iter_prime.a
+    bi = iter_prime.b
+    alpha = params.start_sidh_pub.prime.a - ai
+    beta = params.start_sidh_pub.prime.b - bi
+    assert 2^ai - 3^bi == ui^2 + 4*vi^2
+    assert ker_kappa_gen in params.E_start
+
+    # calculate aixiliary isogeny
+    assert params.E_start.a_invariants() == (0, 0, 0, 1, 0), "Not implemented (0, 6, 0, 1, 0) auxiliary isogeny"
+
+    def gamma_start(P):
+        assert P in params.E_start
+        iP = i_isogeny(params.start_sidh_pub, P)
+        assert i_isogeny(params.start_sidh_pub, iP) == -P
+        return ui * P + (2 * vi) * iP
+
+    ker_tilde_kappa_hat_gen = gamma_start(ker_kappa_gen)
+    tilde_kappa_hat = params.E_start.isogeny(ker_tilde_kappa_hat_gen, algorithm="factored")
+    C = tilde_kappa_hat.codomain()
+    
+    def gamma(P):
+        assert P in params.E_start
+        Q = 2^alpha * tilde_kappa_hat(gamma_start(P))
+        return Q
+    
+    Pc = gamma(params.start_sidh_pub.Pa)
+    Qc = gamma(params.start_sidh_pub.Qa)
+    print(Pc, Qc)
+
+    return True
 
 def attack(params: CDParams, iteration=1):
     assert len(params.betas) == iteration
@@ -131,10 +176,11 @@ def attack(params: CDParams, iteration=1):
     print(f"alpha_{iteration}: {alpha}")
     print(f"beta_{iteration}: {beta}")
     print()
+    next_iter_prime = SIDHPrime(ai, bi, iter_prime.f, proof=False)
 
     ki = 0
     while True:
-        kappa = choice_kappa(params, beta, ki)
+        kappa, ker_kappa_gen = choice_kappa(params, beta, ki)
         E1 = kappa.codomain()
         assert kappa.domain() == params.E_start
         assert kappa.degree() == 3^beta
@@ -160,10 +206,11 @@ def attack(params: CDParams, iteration=1):
         assert P_dest.order() == 2^ai
         assert Q_dest.order() == 2^ai
         assert P_dest.weil_pairing(Q_dest, 2^ai) != 1
+    
+        next_params = CDParams(params.start_sidh_pub, params.E, P_dest, Q_dest, iter_prime=next_iter_prime, betas=params.betas+[beta], ks=params.ks+[ki])
 
-        break
+        if solve_D(next_params, ui, vi, ker_kappa_gen, E1, P1, Q1):
+            break
         ki += 1
 
-    next_iter_prime = SIDHPrime(ai, bi, iter_prime.f, proof=False)
-    next_params = CDParams(params.start_sidh_pub, params.E, P_dest, Q_dest, iter_prime=next_iter_prime, betas=params.betas+[beta], ks=params.ks+[ki])
-    attack(next_params, iteration=iteration+1)
+    # attack(next_params, iteration=iteration+1)
