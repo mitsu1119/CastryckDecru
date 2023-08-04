@@ -54,7 +54,7 @@ def FromProdToJac(C, E, Pc, P, Qc, Q, ai):
         assert Pc.order() == 2^ai
         assert Pe.order() == 2^ai
 
-        MumfordCoeffs.<U0, U1, V0, V1> = AffineSpace(Fpp, 4)
+        MumfordCoeffs.<U0, U1, V0, V1> = PolynomialRing(Fpp)
 
         # for phi1(PH + QH)
         U0_tilde = 1 / U0
@@ -85,7 +85,7 @@ def FromProdToJac(C, E, Pc, P, Qc, Q, ai):
         Id = ideal(eq1, eq2, eq3, eq4, eq5)
 
         # too late
-        print(Id.groebner_basis())
+        # print(Id.groebner_basis())
         print(Id.variety())
 
         return None
