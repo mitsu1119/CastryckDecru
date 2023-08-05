@@ -99,8 +99,6 @@ def i_isogeny(sidh_pub, P):
 
 def is_split(C, E, Pc, P, Qc, Q, ai):
     FromProdToJac(C, E, Pc, P, Qc, Q, ai)
-    load("richelot_aux.sage")
-    FromProdToJac(C, E, Pc, Qc, P, Q, ai)
     return True
 
 # 3^iter_prime.b isogeny φ:E1 -> E で，φ(P1) = P，φ(Q1) = Q となるものは存在するか？
