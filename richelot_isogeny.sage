@@ -36,5 +36,39 @@ def FromProdToJac(C, E, Pc, P, Qc, Q, ai):
 
     delta_alpha = (alphas[0] - alphas[1]) * (alphas[1] - alphas[2]) * (alphas[2] - alphas[0])
     delta_beta = (betas[0] - betas[1]) * (betas[1] - betas[2]) * (betas[2] - betas[0])
-    assert R + S * T == -delta_alpha * delta_beta / D^2
+    ss = [-delta_alpha / (R * D), -T / R]
+    ts = [delta_beta / (R * D), -S / R]
+    assert R + S * T == R^2 * ss[0] * ts[0]
+
+    h_alphas = []
+    h = ss[0]
+    for i in range(3):
+        h_alpha = (alphas[i] - ss[1]) / ss[0]
+        h_alphas.append(h_alpha)
+        h *= (x^2 - h_alpha)
+    H = HyperellipticCurve(h)
+    JH = H.jacobian()
+
+    def Phi_hat(Pc, Pe):
+        print("yey")
+        assert Pc in C
+        assert Pc.order() == 2^ai
+        assert Pe in E
+        assert Pe.order() == 2^ai
+
+        # phi1_hat: C -> JH
+        x1, y1 = Pc.xy()
+        U = ss[0] * x^2 + ss[1] - x1
+        V = PR(y1 / ss[0])
+        JPc = JH([U, V])
+
+        # phi2_hat: E -> JH
+        x2, y2 = Pe.xy()
+        U = ts[0] - x^2 * (x2 - ts[1])
+        V = x^3 * (y2 / ts[0])
+        JPe = JH([U, V])
+        return JPc + JPe
+
+    D2_PcP = Phi_hat(Pc, P)
+    D2_QcQ = Phi_hat(Qc, Q)
 
