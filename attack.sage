@@ -98,7 +98,8 @@ def i_isogeny(sidh_pub, P):
     return Q
 
 def is_split(C, E, Pc, P, Qc, Q, ai):
-    FromProdToJac(C, E, Pc, P, Qc, Q, ai)
+    h, D2_PcP, D2_QcQ = FromProdToJac(C, E, Pc, P, Qc, Q, ai)
+    FromJacToJac(h, D2_PcP, D2_QcQ, ai - 1)
     return True
 
 # 3^iter_prime.b isogeny φ:E1 -> E で，φ(P1) = P，φ(Q1) = Q となるものは存在するか？
@@ -132,7 +133,7 @@ def solve_D(params: CDParams, ui, vi, ker_kappa_gen, E1, P1, Q1):
     Pc = gamma(params.start_sidh_pub.Pa)
     Qc = gamma(params.start_sidh_pub.Qa)
 
-    print(is_split(C, params.E, Pc, params.P, Qc, params.Q, ai))
+    is_split(C, params.E, Pc, params.P, Qc, params.Q, ai)
 
     return True
 

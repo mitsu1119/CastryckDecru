@@ -50,7 +50,6 @@ def FromProdToJac(C, E, Pc, P, Qc, Q, ai):
     JH = H.jacobian()
 
     def Phi_hat(Pc, Pe):
-        print("yey")
         assert Pc in C
         assert Pc.order() == 2^ai
         assert Pe in E
@@ -72,3 +71,41 @@ def FromProdToJac(C, E, Pc, P, Qc, Q, ai):
     D2_PcP = Phi_hat(Pc, P)
     D2_QcQ = Phi_hat(Qc, Q)
 
+    return h, D2_PcP, D2_QcQ
+
+def FromJacToJac(h, D1, D2, ai):
+    PR = h.parent()
+    K = PR.base_ring()
+
+    g1 = (2^(ai - 1) * D1)[0]
+    g2 = (2^(ai - 1) * D2)[0]
+    g3 = PR(h / (g1 * g2))
+    gs = [g1, g2, g3]
+
+    H = HyperellipticCurve(h)
+    JH = H.jacobian()
+
+    assert 2 * JH([g1, PR(0)]) == JH(0)
+    assert 2 * JH([g2, PR(0)]) == JH(0)
+    assert g1[2] == 1
+    assert g2[2] == 1
+    assert g1 * g2 * g3 == h
+
+    M = Matrix(K, [[g1[0], g1[1], g1[2]],
+                   [g2[0], g2[1], g2[2]],
+                   [g3[0], g3[1], g3[2]]])
+    delta = M.determinant()
+
+    dg1 = g1.derivative()
+    dg2 = g2.derivative()
+    dg3 = g3.derivative()
+    dgs = [dg1, dg2, dg3]
+
+    hs = [0, 0, 0]
+    for i, j, k in [(1,2,3), (2,3,1), (3,1,2)]:
+        hs[i - 1] = (dgs[j - 1] * gs[k - 1] - gs[j - 1] * dgs[k - 1]) / delta
+    hp = prod(hs)
+
+    print(hp)
+
+    return True
