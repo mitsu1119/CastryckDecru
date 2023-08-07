@@ -48,7 +48,7 @@ def FromProdToJac(C, E, Pc, P, Qc, Q, ai):
         h *= (x^2 - h_alpha)
     H = HyperellipticCurve(h)
     JH = H.jacobian()
-
+    
     def Phi_hat(Pc, Pe):
         assert Pc in C
         assert Pc.order() == 2^ai
@@ -73,9 +73,37 @@ def FromProdToJac(C, E, Pc, P, Qc, Q, ai):
 
     return h, D2_PcP, D2_QcQ
 
+# Mumford representation D = (U, V) in hyperelliptic curve y^2 = h
+# Convert to formal sum (no weight)
+def mumford_to_formal_sum_points(h, D):
+    K = h.parent().base_ring()
+    Fp4 = K.extension(2)
+    PR.<x> = PolynomialRing(Fp4)
+    divs = []
+    for xx in D[0].roots(Fp4):
+        divs.append((xx[0], D[1](xx[0])))
+    return divs, PR
+
 def FromJacToJac(h, D1, D2, ai):
     PR = h.parent()
+    x = PR.gens()[0]
     K = PR.base_ring()
+
+    H = HyperellipticCurve(h)
+    JH = H.jacobian()
+
+    # D1 and D2 must be in JH
+    JH(D1[0], D1[1])
+    JH(D2[0], D2[1])
+
+    assert D1[0].degree() == 2
+    assert D1[0].is_monic()
+
+    assert D2[0].degree() == 2
+    assert D2[0].is_monic()
+
+    assert D1[1].degree() <= 1
+    assert D2[1].degree() <= 1
 
     g1 = (2^(ai - 1) * D1)[0]
     g2 = (2^(ai - 1) * D2)[0]
@@ -96,6 +124,10 @@ def FromJacToJac(h, D1, D2, ai):
                    [g3[0], g3[1], g3[2]]])
     delta = M.determinant()
 
+    # Jacobian -> Jacobian
+    if delta == 0:
+        return None, None, None
+
     dg1 = g1.derivative()
     dg2 = g2.derivative()
     dg3 = g3.derivative()
@@ -105,7 +137,33 @@ def FromJacToJac(h, D1, D2, ai):
     for i, j, k in [(1,2,3), (2,3,1), (3,1,2)]:
         hs[i - 1] = (dgs[j - 1] * gs[k - 1] - gs[j - 1] * dgs[k - 1]) / delta
     hp = prod(hs)
+    h1 = hs[0]
+    h2 = hs[1]
+    h3 = hs[2]
 
-    print(hp)
+    Hp = HyperellipticCurve(hp)
+    JHp = Hp.jacobian()
 
-    return True
+    div_points, MumfordPR = mumford_to_formal_sum_points(h, D1)
+    assert len(div_points) == 2
+    (D1P1x, D1P1y), (D1P2x, D1P2y) = div_points
+    D1P1_hp_U = g1(D1P1x) * MumfordPR(h1) + g2(D1P1x) * MumfordPR(h2)
+    D1P2_hp_U = g1(D1P2x) * MumfordPR(h1) + g2(D1P2x) * MumfordPR(h2)
+    D1P1_hp_V = g1(D1P1x) * MumfordPR(h1) * (D1P1x - MumfordPR(x)) / D1P1y
+    D1P2_hp_V = g1(D1P2x) * MumfordPR(h1) * (D1P2x - MumfordPR(x)) / D1P2y
+    D1_hp = JHp([D1P1_hp_U, D1P1_hp_V]) + JHp([D1P2_hp_U, D1P2_hp_V])
+    D1_hp_U, D1_hp_V = PR(D1_hp[0]), PR(D1_hp[1])
+    D1_hp = JHp([D1_hp_U, D1_hp_V])
+
+    div_points, MumfordPR = mumford_to_formal_sum_points(h, D2)
+    assert len(div_points) == 2
+    (D2P1x, D2P1y), (D2P2x, D2P2y) = div_points
+    D2P1_hp_U = g1(D2P1x) * MumfordPR(h1) + g2(D2P1x) * MumfordPR(h2)
+    D2P2_hp_U = g1(D2P2x) * MumfordPR(h1) + g2(D2P2x) * MumfordPR(h2)
+    D2P1_hp_V = g1(D2P1x) * MumfordPR(h1) * (D2P1x - MumfordPR(x)) / D2P1y
+    D2P2_hp_V = g1(D2P2x) * MumfordPR(h1) * (D2P2x - MumfordPR(x)) / D2P2y
+    D2_hp = JHp([D2P1_hp_U, D2P1_hp_V]) + JHp([D2P2_hp_U, D2P2_hp_V])
+    D2_hp_U, D2_hp_V = PR(D2_hp[0]), PR(D2_hp[1])
+    D2_hp = JHp([D2_hp_U, D2_hp_V])
+
+    return hp, D1_hp, D2_hp

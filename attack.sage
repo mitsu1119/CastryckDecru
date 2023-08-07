@@ -99,8 +99,23 @@ def i_isogeny(sidh_pub, P):
 
 def is_split(C, E, Pc, P, Qc, Q, ai):
     h, D2_PcP, D2_QcQ = FromProdToJac(C, E, Pc, P, Qc, Q, ai)
-    FromJacToJac(h, D2_PcP, D2_QcQ, ai - 1)
-    return True
+
+    hp, D1, D2 = h, D2_PcP, D2_QcQ
+    for i in range(1, ai - 1):
+        hp, D1, D2 = FromJacToJac(hp, D1, D2, ai - i)
+        JHp = HyperellipticCurve(hp).jacobian()
+        assert 2^(ai - i) * D1 == 0
+        assert 2^(ai - i) * D2 == 0
+
+    # last step
+    hp, D1, D2 = FromJacToJac(hp, D1, D2, 1)
+    
+    # be split because delta == 0
+    if hp == None:
+        return True
+
+    # gluing
+    return False
 
 # 3^iter_prime.b isogeny φ:E1 -> E で，φ(P1) = P，φ(Q1) = Q となるものは存在するか？
 def solve_D(params: CDParams, ui, vi, ker_kappa_gen, E1, P1, Q1):
@@ -133,9 +148,7 @@ def solve_D(params: CDParams, ui, vi, ker_kappa_gen, E1, P1, Q1):
     Pc = gamma(params.start_sidh_pub.Pa)
     Qc = gamma(params.start_sidh_pub.Qa)
 
-    is_split(C, params.E, Pc, params.P, Qc, params.Q, ai)
-
-    return True
+    return is_split(C, params.E, Pc, params.P, Qc, params.Q, ai)
 
 def attack(params: CDParams, iteration=1):
     assert len(params.betas) == iteration
@@ -216,7 +229,9 @@ def attack(params: CDParams, iteration=1):
     
         next_params = CDParams(params.start_sidh_pub, params.E, P_dest, Q_dest, iter_prime=next_iter_prime, betas=params.betas+[beta], ks=params.ks+[ki])
 
+        print(f"test ki = {ki}")
         if solve_D(next_params, ui, vi, ker_kappa_gen, E1, P1, Q1):
+            print("gluing!!")
             break
         ki += 1
 
