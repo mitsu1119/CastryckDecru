@@ -108,10 +108,10 @@ def is_split(C, E, Pc, P, Qc, Q, ai):
         assert 2^(ai - i) * D2 == 0
 
     # last step
-    hp, D1, D2 = FromJacToJac(hp, D1, D2, 1)
+    res = FromJacToJac_last_test(hp, D1, D2, 1)
     
     # be split because delta == 0
-    if hp == None:
+    if res:
         return True
 
     # gluing
@@ -198,7 +198,8 @@ def attack(params: CDParams, iteration=1):
     print()
     next_iter_prime = SIDHPrime(ai, bi, iter_prime.f, proof=False)
 
-    ki = 5
+    # ki = 0, 1, 2 とかだと zero division error がおきる．なぜ
+    ki = 3
     while True:
         kappa, ker_kappa_gen = choice_kappa(params, beta, ki)
         E1 = kappa.codomain()
@@ -231,7 +232,7 @@ def attack(params: CDParams, iteration=1):
 
         print(f"test ki = {ki}")
         if solve_D(next_params, ui, vi, ker_kappa_gen, E1, P1, Q1):
-            print("gluing!!")
+            print("split!!")
             break
         ki += 1
 

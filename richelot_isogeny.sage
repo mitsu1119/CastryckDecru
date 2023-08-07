@@ -125,8 +125,7 @@ def FromJacToJac(h, D1, D2, ai):
     delta = M.determinant()
 
     # Jacobian -> Jacobian
-    if delta == 0:
-        return None, None, None
+    assert delta != 0
 
     dg1 = g1.derivative()
     dg2 = g2.derivative()
@@ -167,3 +166,53 @@ def FromJacToJac(h, D1, D2, ai):
     D2_hp = JHp([D2_hp_U, D2_hp_V])
 
     return hp, D1_hp, D2_hp
+
+# delta = 0 test
+def FromJacToJac_last_test(h, D1, D2, ai):
+    assert ai == 1
+
+    PR = h.parent()
+    x = PR.gens()[0]
+    K = PR.base_ring()
+
+    H = HyperellipticCurve(h)
+    JH = H.jacobian()
+
+    # D1 and D2 must be in JH
+    JH(D1[0], D1[1])
+    JH(D2[0], D2[1])
+
+    assert D1[0].degree() == 2
+    assert D1[0].is_monic()
+
+    assert D2[0].degree() == 2
+    assert D2[0].is_monic()
+
+    assert D1[1].degree() <= 1
+    assert D2[1].degree() <= 1
+
+    g1 = (2^(ai - 1) * D1)[0]
+    g2 = (2^(ai - 1) * D2)[0]
+    g3 = PR(h / (g1 * g2))
+    gs = [g1, g2, g3]
+
+    H = HyperellipticCurve(h)
+    JH = H.jacobian()
+
+    assert 2 * JH([g1, PR(0)]) == JH(0)
+    assert 2 * JH([g2, PR(0)]) == JH(0)
+    assert g1[2] == 1
+    assert g2[2] == 1
+    assert g1 * g2 * g3 == h
+
+    M = Matrix(K, [[g1[0], g1[1], g1[2]],
+                   [g2[0], g2[1], g2[2]],
+                   [g3[0], g3[1], g3[2]]])
+    delta = M.determinant()
+
+    # Jacobian -> Jacobian
+    if delta != 0:
+        return False
+
+    # Jacobian -> Product of supersingular Elliptic Curves
+    return True
