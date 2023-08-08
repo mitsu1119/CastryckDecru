@@ -97,12 +97,13 @@ def i_isogeny(sidh_pub, P):
     Q = E_start(-x, i*y)
     return Q
 
-def is_split(C, E, Pc, P, Qc, Q, ai):
-    h, D2_PcP, D2_QcQ = FromProdToJac(C, E, Pc, P, Qc, Q, ai)
+def is_split(C, E, Pc, P, Qc, Q, ai, proof=True):
+    h, D2_PcP, D2_QcQ = FromProdToJac(C, E, Pc, P, Qc, Q, ai, proof=proof)
 
     hp, D1, D2 = h, D2_PcP, D2_QcQ
     for i in range(1, ai - 1):
-        hp, D1, D2 = FromJacToJac(hp, D1, D2, ai - i)
+        print(f"{i}th Jac -> Jac")
+        hp, D1, D2 = FromJacToJac(hp, D1, D2, ai - i, proof=proof)
         JHp = HyperellipticCurve(hp).jacobian()
         assert 2^(ai - i) * D1 == 0
         assert 2^(ai - i) * D2 == 0
@@ -118,7 +119,7 @@ def is_split(C, E, Pc, P, Qc, Q, ai):
     return False
 
 # 3^iter_prime.b isogeny φ:E1 -> E で，φ(P1) = P，φ(Q1) = Q となるものは存在するか？
-def solve_D(params: CDParams, ui, vi, ker_kappa_gen, E1, P1, Q1):
+def solve_D(params: CDParams, ui, vi, ker_kappa_gen, E1, P1, Q1, proof=True):
     iter_prime = params.iter_prime
     ai = iter_prime.a
     bi = iter_prime.b
@@ -149,13 +150,13 @@ def solve_D(params: CDParams, ui, vi, ker_kappa_gen, E1, P1, Q1):
         assert P in params.E_start
         Q = 2^alpha * tilde_kappa_hat(gamma_start(P))
         return Q
-    
+
     Pc = gamma(params.start_sidh_pub.Pa)
     Qc = gamma(params.start_sidh_pub.Qa)
 
-    return is_split(C, params.E, Pc, params.P, Qc, params.Q, ai)
+    return is_split(C, params.E, Pc, params.P, Qc, params.Q, ai, proof=proof)
 
-def attack(params: CDParams, bobs_public: BobsPublic, iteration=1):
+def attack(params: CDParams, bobs_public: BobsPublic, iteration=1, proof=True):
     assert len(params.betas) == iteration
 
     prime = params.prime
@@ -208,7 +209,10 @@ def attack(params: CDParams, bobs_public: BobsPublic, iteration=1):
             if table == None:
                 continue
             bi, ai, ui, vi = table
+            if ai > prev_ai:
+                continue
             assert 2^ai - 3^bi == ui^2 + 4*vi^2
+            assert prev_ai >= ai
             break
         alpha = prime.a - ai
         beta = prime.b - bi
@@ -220,23 +224,27 @@ def attack(params: CDParams, bobs_public: BobsPublic, iteration=1):
     print()
     next_iter_prime = SIDHPrime(ai, bi, iter_prime.f, proof=False)
 
-    # ki = 0, 1, 2 とかだと zero division error がおきる．なぜ
     ki = 0
+
+    if iteration <= 4:
+        ki = [8, 5, 8, 5][iteration - 1]
+
     while True:
         kappa, ker_kappa_gen = choice_kappa(params, beta, ki)
         E1 = kappa.codomain()
         assert kappa.domain() == params.E_start
         assert kappa.degree() == 3^beta
         print(kappa)
-        print(E1)
         print()
 
         P1 = kappa(2^alpha * params.start_sidh_pub.Pa)
         Q1 = kappa(2^alpha * params.start_sidh_pub.Qa)
         assert P1 in E1
         assert Q1 in E1
-        assert P1.order() == 2^ai
-        assert Q1.order() == 2^ai
+
+        if proof:
+            assert P1.order() == 2^ai
+            assert Q1.order() == 2^ai
 
         kappa_hat = kappa.dual()
         assert kappa_hat.domain() == E1
@@ -244,19 +252,23 @@ def attack(params: CDParams, bobs_public: BobsPublic, iteration=1):
         alpha_diff = prev_ai - ai
         P_dest = 2^alpha_diff * params.P
         Q_dest = 2^alpha_diff * params.Q
+
         assert P_dest in params.E
         assert Q_dest in params.E
-        assert P_dest.order() == 2^ai
-        assert Q_dest.order() == 2^ai
+        if proof:
+            assert P_dest.order() == 2^ai
+            assert Q_dest.order() == 2^ai
         assert P_dest.weil_pairing(Q_dest, 2^ai) != 1
-    
-        next_params = CDParams(params.start_sidh_pub, params.E, P_dest, Q_dest, iter_prime=next_iter_prime, betas=params.betas+[beta], ks=params.ks+[ki])
+
+        next_params = CDParams(params.start_sidh_pub, params.E, P_dest, Q_dest, iter_prime=next_iter_prime, betas=params.betas+[beta], ks=params.ks+[ki], proof=proof)
 
         print(f"test ki = {ki}")
-        if solve_D(next_params, ui, vi, ker_kappa_gen, E1, P1, Q1):
+        if iteration <= 4 or solve_D(next_params, ui, vi, ker_kappa_gen, E1, P1, Q1, proof=proof):
             print(f"skb = {ki} * 3^{beta}")
             print("split!!")
+            print(f"ki: {next_params.ks}, betas: {next_params.betas}")
+            print()
             break
         ki += 1
 
-    return attack(next_params, bobs_public, iteration=iteration+1)
+    return attack(next_params, bobs_public, iteration=iteration+1, proof=proof)
