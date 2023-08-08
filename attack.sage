@@ -127,14 +127,19 @@ def solve_D(params: CDParams, ui, vi, ker_kappa_gen, E1, P1, Q1):
     assert 2^ai - 3^bi == ui^2 + 4*vi^2
     assert ker_kappa_gen in params.E_start
 
-    # calculate aixiliary isogeny
-    assert params.E_start.a_invariants() == (0, 0, 0, 1, 0), "Not implemented (0, 6, 0, 1, 0) auxiliary isogeny"
-
     def gamma_start(P):
         assert P in params.E_start
-        iP = i_isogeny(params.start_sidh_pub, P)
-        assert i_isogeny(params.start_sidh_pub, iP) == -P
-        return ui * P + (2 * vi) * iP
+
+        if params.E_start.a_invariants() == (0, 0, 0, 1, 0):
+            iP = i_isogeny(params.start_sidh_pub, P)
+            assert i_isogeny(params.start_sidh_pub, iP) == -P
+            return ui * P + (2 * vi) * iP
+
+        if params.E_start.a_invariants():
+            two_i_isogeny = params.E_start.isogeny(params.E_start.lift_x(ZZ(1)), codomain=params.E_start)
+            iP = two_i_isogeny(P)
+            assert two_i_isogeny(iP) == -4 * P
+            return iP
 
     ker_tilde_kappa_hat_gen = gamma_start(ker_kappa_gen)
     tilde_kappa_hat = params.E_start.isogeny(ker_tilde_kappa_hat_gen, algorithm="factored")
