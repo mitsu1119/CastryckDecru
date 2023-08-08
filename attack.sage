@@ -150,7 +150,7 @@ def solve_D(params: CDParams, ui, vi, ker_kappa_gen, E1, P1, Q1):
 
     return is_split(C, params.E, Pc, params.P, Qc, params.Q, ai)
 
-def attack(params: CDParams, iteration=1):
+def attack(params: CDParams, bobs_public: BobsPublic, iteration=1):
     assert len(params.betas) == iteration
 
     prime = params.prime
@@ -158,17 +158,29 @@ def attack(params: CDParams, iteration=1):
     prev_ai = iter_prime.a
     prev_bi = iter_prime.b
 
-    # last brute force iteration
+    # last step
     if prev_bi <= 3:
         print(f"[Last Iteration]")
         print(f"brute force 3^{prev_bi} kappa")
         print(f"betas: {params.betas}")
         print(f"ks: {params.ks}")
         assert len(params.betas) == len(params.ks) + 1
+
+        # last brute force iteration
         recovered_skb = 0
         for i in range(len(params.ks)):
             recovered_skb += params.ks[i] * 3^params.betas[i]
-        return recovered_skb
+
+        last_beta = params.betas[-1]
+        for ki in range(3^last_beta):
+            skb_est = recovered_skb + ki * 3^last_beta
+            R = params.start_sidh_pub.Pb + skb_est * params.start_sidh_pub.Qb
+            phiB_est = params.start_sidh_pub.E0.isogeny(R, algorithm="factored")
+            phiB_Pa = phiB_est(params.start_sidh_pub.Pa)
+            phiB_Qa = phiB_est(params.start_sidh_pub.Qa)
+            if phiB_Pa == bobs_public.P and phiB_Qa == bobs_public.Q:
+                return skb
+        assert 1 == 2, "brute force missing"
 
     # print the information for iteration
     if iteration == 1:
@@ -242,4 +254,4 @@ def attack(params: CDParams, iteration=1):
             break
         ki += 1
 
-    return attack(next_params, iteration=iteration+1)
+    return attack(next_params, bobs_public, iteration=iteration+1)

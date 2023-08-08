@@ -10,7 +10,7 @@ E0 = EllipticCurve(Fpp, [0, 0, 0, 1, 0])
 
 Pa, Qa, Pb, Qb = generate_sidh_torsions(E0, prime)
 sidh_pub = SIDHPublic(prime, E0, Pa, Qa, Pb, Qb)
-skb = 100 + 2 * 3^14
+skb = 3271984327985
 phi_b = E0.isogeny(Pb + skb * Qb, algorithm="factored")
 
 print("[target secrets]")
@@ -22,8 +22,9 @@ E = phi_b.codomain()
 P = phi_b(Pa)
 Q = phi_b(Qa)
 
+bobs_public = BobsPublic(sidh_pub, E, P, Q)
 cdparams = CDParams(sidh_pub, E, P, Q)
-recovered_skb = attack(cdparams)
+recovered_skb = attack(cdparams, bobs_public)
 
 print()
 assert recovered_skb == skb
