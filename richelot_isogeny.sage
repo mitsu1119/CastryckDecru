@@ -105,6 +105,9 @@ def FromJacToJac(h, D1, D2, ai):
     assert D1[1].degree() <= 1
     assert D2[1].degree() <= 1
 
+    assert 2^ai * D1 == 0
+    assert 2^ai * D2 == 0
+
     g1 = (2^(ai - 1) * D1)[0]
     g2 = (2^(ai - 1) * D2)[0]
     g3 = PR(h / (g1 * g2))
@@ -143,27 +146,46 @@ def FromJacToJac(h, D1, D2, ai):
     Hp = HyperellipticCurve(hp)
     JHp = Hp.jacobian()
 
+    # D1 = P1 + P2 - inf1 - inf2
+    # div_points = (P1, P2)
     div_points, MumfordPR = mumford_to_formal_sum_points(h, D1)
     assert len(div_points) == 2
     (D1P1x, D1P1y), (D1P2x, D1P2y) = div_points
+
+    # convert to D1 in the notation of h' by Richelot correspondence
     D1P1_hp_U = g1(D1P1x) * MumfordPR(h1) + g2(D1P1x) * MumfordPR(h2)
-    D1P2_hp_U = g1(D1P2x) * MumfordPR(h1) + g2(D1P2x) * MumfordPR(h2)
     D1P1_hp_V = g1(D1P1x) * MumfordPR(h1) * (D1P1x - MumfordPR(x)) / D1P1y
+    D1P2_hp_U = g1(D1P2x) * MumfordPR(h1) + g2(D1P2x) * MumfordPR(h2)
     D1P2_hp_V = g1(D1P2x) * MumfordPR(h1) * (D1P2x - MumfordPR(x)) / D1P2y
+
     D1_hp = JHp([D1P1_hp_U, D1P1_hp_V]) + JHp([D1P2_hp_U, D1P2_hp_V])
     D1_hp_U, D1_hp_V = PR(D1_hp[0]), PR(D1_hp[1])
     D1_hp = JHp([D1_hp_U, D1_hp_V])
 
+    # D1_hp must be in JHp
+    JHp([D1_hp[0], D1_hp[1]])
+
+    # D2 = P1 + P2 - inf1 - inf2
+    # div_points = (P1, P2)
     div_points, MumfordPR = mumford_to_formal_sum_points(h, D2)
     assert len(div_points) == 2
     (D2P1x, D2P1y), (D2P2x, D2P2y) = div_points
+
+    # convert to D1 in the notation of h' by Richelot correspondence
     D2P1_hp_U = g1(D2P1x) * MumfordPR(h1) + g2(D2P1x) * MumfordPR(h2)
     D2P2_hp_U = g1(D2P2x) * MumfordPR(h1) + g2(D2P2x) * MumfordPR(h2)
     D2P1_hp_V = g1(D2P1x) * MumfordPR(h1) * (D2P1x - MumfordPR(x)) / D2P1y
     D2P2_hp_V = g1(D2P2x) * MumfordPR(h1) * (D2P2x - MumfordPR(x)) / D2P2y
+
     D2_hp = JHp([D2P1_hp_U, D2P1_hp_V]) + JHp([D2P2_hp_U, D2P2_hp_V])
     D2_hp_U, D2_hp_V = PR(D2_hp[0]), PR(D2_hp[1])
     D2_hp = JHp([D2_hp_U, D2_hp_V])
+
+    # D2_hp must be in JHp
+    JHp([D2_hp[0], D2_hp[1]])
+
+    assert 2^(ai - 1) * D1_hp == 0
+    assert 2^(ai - 1) * D2_hp == 0
 
     return hp, D1_hp, D2_hp
 
@@ -190,6 +212,9 @@ def FromJacToJac_last_test(h, D1, D2, ai):
 
     assert D1[1].degree() <= 1
     assert D2[1].degree() <= 1
+
+    assert 2^ai * D1 == 0
+    assert 2^ai * D2 == 0
 
     g1 = (2^(ai - 1) * D1)[0]
     g2 = (2^(ai - 1) * D2)[0]

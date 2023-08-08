@@ -158,12 +158,17 @@ def attack(params: CDParams, iteration=1):
     prev_ai = iter_prime.a
     prev_bi = iter_prime.b
 
+    # last brute force iteration
     if prev_bi <= 3:
         print(f"[Last Iteration]")
         print(f"brute force 3^{prev_bi} kappa")
         print(f"betas: {params.betas}")
         print(f"ks: {params.ks}")
-        return
+        assert len(params.betas) == len(params.ks) + 1
+        recovered_skb = 0
+        for i in range(len(params.ks)):
+            recovered_skb += params.ks[i] * 3^params.betas[i]
+        return recovered_skb
 
     # print the information for iteration
     if iteration == 1:
@@ -199,7 +204,7 @@ def attack(params: CDParams, iteration=1):
     next_iter_prime = SIDHPrime(ai, bi, iter_prime.f, proof=False)
 
     # ki = 0, 1, 2 とかだと zero division error がおきる．なぜ
-    ki = 3
+    ki = 0
     while True:
         kappa, ker_kappa_gen = choice_kappa(params, beta, ki)
         E1 = kappa.codomain()
@@ -232,8 +237,9 @@ def attack(params: CDParams, iteration=1):
 
         print(f"test ki = {ki}")
         if solve_D(next_params, ui, vi, ker_kappa_gen, E1, P1, Q1):
+            print(f"skb = {ki} * 3^{beta}")
             print("split!!")
             break
         ki += 1
 
-    # attack(next_params, iteration=iteration+1)
+    return attack(next_params, iteration=iteration+1)
