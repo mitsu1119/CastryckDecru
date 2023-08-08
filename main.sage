@@ -6,7 +6,7 @@ f = 1
 prime = SIDHPrime(a, b, f)
 
 Fpp.<i> = GF(prime.p^2, modulus=x^2+1)
-E0 = EllipticCurve(Fpp, [0, 0, 0, 1, 0])
+E0 = EllipticCurve(Fpp, [0, 6, 0, 1, 0])
 
 Pa, Qa, Pb, Qb = generate_sidh_torsions(E0, prime)
 sidh_pub = SIDHPublic(prime, E0, Pa, Qa, Pb, Qb)

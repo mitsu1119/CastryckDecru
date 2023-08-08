@@ -135,11 +135,11 @@ def solve_D(params: CDParams, ui, vi, ker_kappa_gen, E1, P1, Q1):
             assert i_isogeny(params.start_sidh_pub, iP) == -P
             return ui * P + (2 * vi) * iP
 
-        if params.E_start.a_invariants():
+        if params.E_start.a_invariants() == (0, 6, 0, 1, 0):
             two_i_isogeny = params.E_start.isogeny(params.E_start.lift_x(ZZ(1)), codomain=params.E_start)
             iP = two_i_isogeny(P)
             assert two_i_isogeny(iP) == -4 * P
-            return iP
+            return ui * P + vi * iP
 
     ker_tilde_kappa_hat_gen = gamma_start(ker_kappa_gen)
     tilde_kappa_hat = params.E_start.isogeny(ker_tilde_kappa_hat_gen, algorithm="factored")
