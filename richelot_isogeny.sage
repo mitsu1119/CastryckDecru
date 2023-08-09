@@ -1,4 +1,4 @@
-# From A Note on Reimplementing the Castryck-Decru Attack and Lessons Learned for SageMath
+# From "A Note on Reimplementing the Castryck-Decru Attack and Lessons Learned for SageMath"
 def FromProdToJac(C, E, Pc, P, Qc, Q, ai, proof=True):
     K = E.base_ring()
 
@@ -41,7 +41,9 @@ def FromProdToJac(C, E, Pc, P, Qc, Q, ai, proof=True):
     delta_beta = (betas[0] - betas[1]) * (betas[1] - betas[2]) * (betas[2] - betas[0])
     ss = [-delta_alpha / (R * D), -T / R]
     ts = [delta_beta / (R * D), -S / R]
-    assert R + S * T == R^2 * ss[0] * ts[0]
+
+    if proof:
+        assert R + S * T == R^2 * ss[0] * ts[0]
 
     h_alphas = []
     h = ss[0]
@@ -155,7 +157,9 @@ def FromJacToJac(h, D1, D2, ai, proof=True):
     # D1 = P1 + P2 - inf1 - inf2
     # div_points = (P1, P2)
     div_points, MumfordPR = mumford_to_formal_sum_points(h, D1)
-    assert len(div_points) == 2
+
+    if proof:
+        assert len(div_points) == 2
     (D1P1x, D1P1y), (D1P2x, D1P2y) = div_points
 
     # convert to D1 in the notation of h' by Richelot correspondence
@@ -174,7 +178,8 @@ def FromJacToJac(h, D1, D2, ai, proof=True):
     # D2 = P1 + P2 - inf1 - inf2
     # div_points = (P1, P2)
     div_points, MumfordPR = mumford_to_formal_sum_points(h, D2)
-    assert len(div_points) == 2
+    if proof:
+        assert len(div_points) == 2
     (D2P1x, D2P1y), (D2P2x, D2P2y) = div_points
 
     # convert to D1 in the notation of h' by Richelot correspondence
@@ -190,13 +195,14 @@ def FromJacToJac(h, D1, D2, ai, proof=True):
     # D2_hp must be in JHp
     JHp([D2_hp[0], D2_hp[1]])
 
-    assert 2^(ai - 1) * D1_hp == 0
-    assert 2^(ai - 1) * D2_hp == 0
+    if proof:
+        assert 2^(ai - 1) * D1_hp == 0
+        assert 2^(ai - 1) * D2_hp == 0
 
     return hp, D1_hp, D2_hp
 
 # delta = 0 test
-def FromJacToJac_last_test(h, D1, D2, ai):
+def FromJacToJac_last_test(h, D1, D2, ai, proof=True):
     assert ai == 1
 
     PR = h.parent()
@@ -210,17 +216,18 @@ def FromJacToJac_last_test(h, D1, D2, ai):
     JH(D1[0], D1[1])
     JH(D2[0], D2[1])
 
-    assert D1[0].degree() == 2
-    assert D1[0].is_monic()
+    if proof:
+        assert D1[0].degree() == 2
+        assert D1[0].is_monic()
 
-    assert D2[0].degree() == 2
-    assert D2[0].is_monic()
+        assert D2[0].degree() == 2
+        assert D2[0].is_monic()
 
-    assert D1[1].degree() <= 1
-    assert D2[1].degree() <= 1
+        assert D1[1].degree() <= 1
+        assert D2[1].degree() <= 1
 
-    assert 2^ai * D1 == 0
-    assert 2^ai * D2 == 0
+        assert 2^ai * D1 == 0
+        assert 2^ai * D2 == 0
 
     g1 = (2^(ai - 1) * D1)[0]
     g2 = (2^(ai - 1) * D2)[0]
@@ -230,11 +237,12 @@ def FromJacToJac_last_test(h, D1, D2, ai):
     H = HyperellipticCurve(h)
     JH = H.jacobian()
 
-    assert 2 * JH([g1, PR(0)]) == JH(0)
-    assert 2 * JH([g2, PR(0)]) == JH(0)
-    assert g1[2] == 1
-    assert g2[2] == 1
-    assert g1 * g2 * g3 == h
+    if proof:
+        assert 2 * JH([g1, PR(0)]) == JH(0)
+        assert 2 * JH([g2, PR(0)]) == JH(0)
+        assert g1[2] == 1
+        assert g2[2] == 1
+        assert g1 * g2 * g3 == h
 
     M = Matrix(K, [[g1[0], g1[1], g1[2]],
                    [g2[0], g2[1], g2[2]],

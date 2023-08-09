@@ -70,7 +70,7 @@ def is_split(C, E, Pc, P, Qc, Q, ai, proof=True):
         assert 2^(ai - i) * D2 == 0
 
     # last step
-    res = FromJacToJac_last_test(hp, D1, D2, 1)
+    res = FromJacToJac_last_test(hp, D1, D2, 1, proof=proof)
     
     # be split because delta == 0
     if res:
