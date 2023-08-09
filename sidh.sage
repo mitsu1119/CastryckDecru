@@ -41,13 +41,14 @@ class SIDHPublic:
         self.Qb = Qb
 
 class BobsPublic:
-    def __init__(self, sidh: SIDHPublic, Eb, P, Q):
-        assert Eb.base_ring() == sidh.E0.base_ring()
-        assert P in Eb
-        assert Q in Eb
-        assert P.order() == 2^sidh.prime.a
-        assert Q.order() == 2^sidh.prime.a
-        assert P.weil_pairing(Q, 2^sidh.prime.a) != 1
+    def __init__(self, sidh: SIDHPublic, Eb, P, Q, proof=True):
+        if proof:
+            assert Eb.base_ring() == sidh.E0.base_ring()
+            assert P in Eb
+            assert Q in Eb
+            assert P.order() == 2^sidh.prime.a
+            assert Q.order() == 2^sidh.prime.a
+            assert P.weil_pairing(Q, 2^sidh.prime.a) != 1
 
         self.sidh = sidh
         self.Eb = Eb

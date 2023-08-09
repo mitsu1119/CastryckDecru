@@ -226,9 +226,6 @@ def attack(params: CDParams, bobs_public: BobsPublic, iteration=1, proof=True):
 
     ki = 0
 
-    if iteration <= 4:
-        ki = [8, 5, 8, 5][iteration - 1]
-
     while True:
         kappa, ker_kappa_gen = choice_kappa(params, beta, ki)
         E1 = kappa.codomain()
@@ -263,7 +260,7 @@ def attack(params: CDParams, bobs_public: BobsPublic, iteration=1, proof=True):
         next_params = CDParams(params.start_sidh_pub, params.E, P_dest, Q_dest, iter_prime=next_iter_prime, betas=params.betas+[beta], ks=params.ks+[ki], proof=proof)
 
         print(f"test ki = {ki}")
-        if iteration <= 4 or solve_D(next_params, ui, vi, ker_kappa_gen, E1, P1, Q1, proof=proof):
+        if solve_D(next_params, ui, vi, ker_kappa_gen, E1, P1, Q1, proof=proof):
             print(f"skb = {ki} * 3^{beta}")
             print("split!!")
             print(f"ki: {next_params.ks}, betas: {next_params.betas}")
