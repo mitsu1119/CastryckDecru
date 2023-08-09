@@ -1,18 +1,17 @@
 # From "A Note on Reimplementing the Castryck-Decru Attack and Lessons Learned for SageMath"
-def FromProdToJac(C, E, Pc, P, Qc, Q, ai, proof=True):
+def FromProdToJac(C, E, Pc, P, Qc, Q, ai):
     K = E.base_ring()
 
-    if proof:
-        assert C.base_ring() == K
-        assert K.characteristic() != 2
-        assert Pc in C
-        assert P in E
-        assert Qc in C
-        assert Q in E
-        assert Pc.order() == 2^ai
-        assert P.order() == 2^ai
-        assert Qc.order() == 2^ai
-        assert Q.order() == 2^ai
+    assert C.base_ring() == K
+    assert K.characteristic() != 2
+    assert Pc in C
+    assert P in E
+    assert Qc in C
+    assert Q in E
+    assert Pc.order() == 2^ai
+    assert P.order() == 2^ai
+    assert Qc.order() == 2^ai
+    assert Q.order() == 2^ai
 
     Pc2 = 2^(ai - 1) * Pc
     P2 = 2^(ai - 1) * P
@@ -33,17 +32,15 @@ def FromProdToJac(C, E, Pc, P, Qc, Q, ai, proof=True):
     D = M.determinant()
     [[R], [S], [T]] = M.inverse() * Matrix(K, [[1], [1], [1]])
 
-    if proof:
-        for i in range(3):
-            assert (R * alphas[i] + T) * (R * betas[i] + S) == R + S * T
+    for i in range(3):
+        assert (R * alphas[i] + T) * (R * betas[i] + S) == R + S * T
 
     delta_alpha = (alphas[0] - alphas[1]) * (alphas[1] - alphas[2]) * (alphas[2] - alphas[0])
     delta_beta = (betas[0] - betas[1]) * (betas[1] - betas[2]) * (betas[2] - betas[0])
     ss = [-delta_alpha / (R * D), -T / R]
     ts = [delta_beta / (R * D), -S / R]
 
-    if proof:
-        assert R + S * T == R^2 * ss[0] * ts[0]
+    assert R + S * T == R^2 * ss[0] * ts[0]
 
     h_alphas = []
     h = ss[0]
@@ -55,11 +52,10 @@ def FromProdToJac(C, E, Pc, P, Qc, Q, ai, proof=True):
     JH = H.jacobian()
     
     def Phi_hat(Pc, Pe):
-        if proof:
-            assert Pc in C
-            assert Pc.order() == 2^ai
-            assert Pe in E
-            assert Pe.order() == 2^ai
+        assert Pc in C
+        assert Pc.order() == 2^ai
+        assert Pe in E
+        assert Pe.order() == 2^ai
 
         # phi1_hat: C -> JH
         x1, y1 = Pc.xy()
@@ -90,7 +86,7 @@ def mumford_to_formal_sum_points(h, D):
         divs.append((xx[0], D[1](xx[0])))
     return divs, PR
 
-def FromJacToJac(h, D1, D2, ai, proof=True):
+def FromJacToJac(h, D1, D2, ai):
     PR = h.parent()
     x = PR.gens()[0]
     K = PR.base_ring()
@@ -102,18 +98,17 @@ def FromJacToJac(h, D1, D2, ai, proof=True):
     JH(D1[0], D1[1])
     JH(D2[0], D2[1])
 
-    if proof:
-        assert D1[0].degree() == 2
-        assert D1[0].is_monic()
+    assert D1[0].degree() == 2
+    assert D1[0].is_monic()
 
-        assert D2[0].degree() == 2
-        assert D2[0].is_monic()
+    assert D2[0].degree() == 2
+    assert D2[0].is_monic()
 
-        assert D1[1].degree() <= 1
-        assert D2[1].degree() <= 1
+    assert D1[1].degree() <= 1
+    assert D2[1].degree() <= 1
 
-        assert 2^ai * D1 == 0
-        assert 2^ai * D2 == 0
+    assert 2^ai * D1 == 0
+    assert 2^ai * D2 == 0
 
     g1 = (2^(ai - 1) * D1)[0]
     g2 = (2^(ai - 1) * D2)[0]
@@ -123,12 +118,11 @@ def FromJacToJac(h, D1, D2, ai, proof=True):
     H = HyperellipticCurve(h)
     JH = H.jacobian()
 
-    if proof:
-        assert 2 * JH([g1, PR(0)]) == JH(0)
-        assert 2 * JH([g2, PR(0)]) == JH(0)
-        assert g1[2] == 1
-        assert g2[2] == 1
-        assert g1 * g2 * g3 == h
+    assert 2 * JH([g1, PR(0)]) == JH(0)
+    assert 2 * JH([g2, PR(0)]) == JH(0)
+    assert g1[2] == 1
+    assert g2[2] == 1
+    assert g1 * g2 * g3 == h
 
     M = Matrix(K, [[g1[0], g1[1], g1[2]],
                    [g2[0], g2[1], g2[2]],
@@ -158,8 +152,7 @@ def FromJacToJac(h, D1, D2, ai, proof=True):
     # div_points = (P1, P2)
     div_points, MumfordPR = mumford_to_formal_sum_points(h, D1)
 
-    if proof:
-        assert len(div_points) == 2
+    assert len(div_points) == 2
     (D1P1x, D1P1y), (D1P2x, D1P2y) = div_points
 
     # convert to D1 in the notation of h' by Richelot correspondence
@@ -178,8 +171,7 @@ def FromJacToJac(h, D1, D2, ai, proof=True):
     # D2 = P1 + P2 - inf1 - inf2
     # div_points = (P1, P2)
     div_points, MumfordPR = mumford_to_formal_sum_points(h, D2)
-    if proof:
-        assert len(div_points) == 2
+    assert len(div_points) == 2
     (D2P1x, D2P1y), (D2P2x, D2P2y) = div_points
 
     # convert to D1 in the notation of h' by Richelot correspondence
@@ -195,14 +187,13 @@ def FromJacToJac(h, D1, D2, ai, proof=True):
     # D2_hp must be in JHp
     JHp([D2_hp[0], D2_hp[1]])
 
-    if proof:
-        assert 2^(ai - 1) * D1_hp == 0
-        assert 2^(ai - 1) * D2_hp == 0
+    assert 2^(ai - 1) * D1_hp == 0
+    assert 2^(ai - 1) * D2_hp == 0
 
     return hp, D1_hp, D2_hp
 
 # delta = 0 test
-def FromJacToJac_last_test(h, D1, D2, ai, proof=True):
+def FromJacToJac_last_test(h, D1, D2, ai):
     assert ai == 1
 
     PR = h.parent()
@@ -216,18 +207,17 @@ def FromJacToJac_last_test(h, D1, D2, ai, proof=True):
     JH(D1[0], D1[1])
     JH(D2[0], D2[1])
 
-    if proof:
-        assert D1[0].degree() == 2
-        assert D1[0].is_monic()
+    assert D1[0].degree() == 2
+    assert D1[0].is_monic()
 
-        assert D2[0].degree() == 2
-        assert D2[0].is_monic()
+    assert D2[0].degree() == 2
+    assert D2[0].is_monic()
 
-        assert D1[1].degree() <= 1
-        assert D2[1].degree() <= 1
+    assert D1[1].degree() <= 1
+    assert D2[1].degree() <= 1
 
-        assert 2^ai * D1 == 0
-        assert 2^ai * D2 == 0
+    assert 2^ai * D1 == 0
+    assert 2^ai * D2 == 0
 
     g1 = (2^(ai - 1) * D1)[0]
     g2 = (2^(ai - 1) * D2)[0]
@@ -237,12 +227,11 @@ def FromJacToJac_last_test(h, D1, D2, ai, proof=True):
     H = HyperellipticCurve(h)
     JH = H.jacobian()
 
-    if proof:
-        assert 2 * JH([g1, PR(0)]) == JH(0)
-        assert 2 * JH([g2, PR(0)]) == JH(0)
-        assert g1[2] == 1
-        assert g2[2] == 1
-        assert g1 * g2 * g3 == h
+    assert 2 * JH([g1, PR(0)]) == JH(0)
+    assert 2 * JH([g2, PR(0)]) == JH(0)
+    assert g1[2] == 1
+    assert g2[2] == 1
+    assert g1 * g2 * g3 == h
 
     M = Matrix(K, [[g1[0], g1[1], g1[2]],
                    [g2[0], g2[1], g2[2]],
