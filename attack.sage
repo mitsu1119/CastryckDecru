@@ -47,17 +47,6 @@ def choice_kappa(params: CDParams, beta, choice):
 
     return kappa, R
 
-# i_isogeny(i_isogeny(P)) == -P
-def i_isogeny(sidh_pub, P):
-    E_start = sidh_pub.E0
-    prime = sidh_pub.prime
-    assert P in E_start
-
-    Fpp = E_start.base_ring()
-    x, y = P.xy()
-    Q = E_start(-x, i*y)
-    return Q
-
 def is_split(C, E, Pc, P, Qc, Q, ai, proof=True):
     h, D2_PcP, D2_QcQ = FromProdToJac(C, E, Pc, P, Qc, Q, ai, proof=proof)
 
@@ -79,6 +68,29 @@ def is_split(C, E, Pc, P, Qc, Q, ai, proof=True):
     # gluing
     return False
 
+# isogeny 2i
+# two_i_isogeny(two_i_isogeny(P)) == -4P
+def two_i_isogeny(E, P):
+    assert P in E
+    if E.a_invariants() == (0, 0, 0, 1, 0):
+        # i_isogeny(i_isogeny(P)) == -P
+        def i_isogeny(PP):
+            Fp2 = E.base_ring()
+            x, y = PP.xy()
+            Q = E(-x, i * y)
+            return Q
+        res = i_isogeny(P)
+        assert i_isogeny(res) == -P
+        return 2 * res
+
+    if E.a_invariants() == (0, 6, 0, 1, 0):
+        two_i_isogeny = E.isogeny(E.lift_x(ZZ(1)), codomain=E)
+        res = two_i_isogeny(P)
+        assert two_i_isogeny(res) == -4 * P
+        return res
+
+    assert 1 == 2, "Not implemented two_i_isogeny"
+
 # 3^iter_prime.b isogeny φ:E1 -> E で，φ(P1) = P，φ(Q1) = Q となるものは存在するか？
 def solve_D(params: CDParams, ui, vi, ker_kappa_gen, E1, P1, Q1, proof=True):
     iter_prime = params.iter_prime
@@ -91,17 +103,7 @@ def solve_D(params: CDParams, ui, vi, ker_kappa_gen, E1, P1, Q1, proof=True):
 
     def gamma_start(P):
         assert P in params.E_start
-
-        if params.E_start.a_invariants() == (0, 0, 0, 1, 0):
-            iP = i_isogeny(params.start_sidh_pub, P)
-            assert i_isogeny(params.start_sidh_pub, iP) == -P
-            return ui * P + (2 * vi) * iP
-
-        if params.E_start.a_invariants() == (0, 6, 0, 1, 0):
-            two_i_isogeny = params.E_start.isogeny(params.E_start.lift_x(ZZ(1)), codomain=params.E_start)
-            iP = two_i_isogeny(P)
-            assert two_i_isogeny(iP) == -4 * P
-            return ui * P + vi * iP
+        return ui * P + vi * two_i_isogeny(params.E_start, P)
 
     ker_tilde_kappa_hat_gen = gamma_start(ker_kappa_gen)
     tilde_kappa_hat = params.E_start.isogeny(ker_tilde_kappa_hat_gen, algorithm="factored")
