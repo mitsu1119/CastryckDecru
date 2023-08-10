@@ -125,8 +125,8 @@ def solve_D(params: CDParams, ui, vi, ker_kappa_gen, E1, P1, Q1):
     return is_split(C, params.E, Pc, params.P, Qc, params.Q, ai)
 
 KappaChoiceParams = namedtuple("KappaChoiceParams", ("params", "prev_ai", "next_iter_prime", "ui", "vi", "alpha", "beta", "ki"))
-def push_correct_choiced_kappa(kappa_choice_params: KappaChoiceParams):
-    params, prev_ai, next_iter_prime, ui, vi, alpha, beta, ki, kappa_buf = kappa_choice_params
+def choiced_kappa(kappa_choice_params: KappaChoiceParams):
+    params, prev_ai, next_iter_prime, ui, vi, alpha, beta, ki = kappa_choice_params
 
     ai = next_iter_prime.a
     kappa, ker_kappa_gen = choice_kappa(params, beta, ki)
@@ -163,7 +163,7 @@ def push_correct_choiced_kappa(kappa_choice_params: KappaChoiceParams):
         print("split!!")
         print(f"ki: {next_params.ks}, betas: {next_params.betas}")
         print()
-        return (kappa, ki)
+        return (ki, next_params, kappa)
     return None
 
 def attack(params: CDParams, bobs_public: BobsPublic, iteration=1):
@@ -246,19 +246,22 @@ def attack(params: CDParams, bobs_public: BobsPublic, iteration=1):
 
     max_process = 8
     proc_list = []
+    ok_res_list = []
     for ki in range(ki_max):
         process = subprocess.Popen(["sage", "search_kappa.sage", f"./temp/kappa_arguments_{ki}"])
-        proc_list.append(process)
+        proc_list.append((process, ki))
         if (ki + 1) % max_process == 0 or (ki + 1) == ki_max:
             for subp in proc_list:
-                subp.wait()
+                subp[0].wait()
+            for subp in proc_list:
+                res = load(f"./temp/kappa_arguments_{subp[1]}")
+                if res != None:
+                    ok_res_list.append(res)
             proc_list = []
+        if len(ok_res_list) >= 1:
+            break
 
-    0/0
-
-    res = p.map(push_correct_choiced_kappa, kappa_choice_params)
-
-    kappa, next_params = kappa_next_params[0]
+    ki, next_params, kappa = ok_res_list[0]
     print("found kappa!!")
     print(kappa)
     return attack(next_params, bobs_public, iteration=iteration+1)

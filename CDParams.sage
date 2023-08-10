@@ -29,7 +29,7 @@ class CDParams:
 
             assert len(betas) == len(ks) + 1
         
-        self.prime = prime
+        self.prime = start_sidh_pub.prime
         self.start_sidh_pub = start_sidh_pub
         self.E_start = E_start
 
