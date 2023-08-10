@@ -12,7 +12,6 @@ Pa, Qa, Pb, Qb = SIDHPublic.generate_torsions(E0, prime)
 
 sidh_pub = SIDHPublic(prime, E0, Pa, Qa, Pb, Qb)
 skb = randint(0, 3^b - 1)
-skb = 100
 phi_b = E0.isogeny(Pb + skb * Qb, algorithm="factored")
 
 print("[target secrets]")
