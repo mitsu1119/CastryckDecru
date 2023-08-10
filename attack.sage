@@ -239,29 +239,38 @@ def attack(params: CDParams, bobs_public: BobsPublic, iteration=1):
     next_iter_prime = SIDHPrime(ai, bi, iter_prime.f, proof=False)
 
     ki_max = 3^(prev_bi - bi)
-    kappa_choice_params_file = []
-    for ki in range(ki_max):
-        arguments = (params, prev_ai, next_iter_prime, ui, vi, alpha, beta, ki)
-        save(arguments, f"./temp/kappa_arguments_{ki}")
 
-    max_process = 8
-    proc_list = []
-    ok_res_list = []
-    for ki in range(ki_max):
-        process = subprocess.Popen(["sage", "search_kappa.sage", f"./temp/kappa_arguments_{ki}"])
-        proc_list.append((process, ki))
-        if (ki + 1) % max_process == 0 or (ki + 1) == ki_max:
-            for subp in proc_list:
-                subp[0].wait()
-            for subp in proc_list:
-                res = load(f"./temp/kappa_arguments_{subp[1]}")
-                if res != None:
-                    ok_res_list.append(res)
-            proc_list = []
-        if len(ok_res_list) >= 1:
-            break
+    # ki_max が小さいときはマルチプロセスにしない (sage の初期化が遅いので)
+    if ki_max <= 3:
+        for ki in range(ki_max):
+            res = choiced_kappa((params, prev_ai, next_iter_prime, ui, vi, alpha, beta, ki))
+            if res != None:
+                ki, next_params, kappa = res
+                break
+    else:
+        kappa_choice_params_file = []
+        for ki in range(ki_max):
+            arguments = (params, prev_ai, next_iter_prime, ui, vi, alpha, beta, ki)
+            save(arguments, f"./temp/kappa_arguments_{ki}")
 
-    ki, next_params, kappa = ok_res_list[0]
+        max_process = 8
+        proc_list = []
+        ok_res_list = []
+        for ki in range(ki_max):
+            process = subprocess.Popen(["sage", "search_kappa.sage", f"./temp/kappa_arguments_{ki}"])
+            proc_list.append((process, ki))
+            if (ki + 1) % max_process == 0 or (ki + 1) == ki_max:
+                for subp in proc_list:
+                    subp[0].wait()
+                for subp in proc_list:
+                    res = load(f"./temp/kappa_arguments_{subp[1]}")
+                    if res != None:
+                        ok_res_list.append(res)
+                proc_list = []
+            if len(ok_res_list) >= 1:
+                break
+
+        ki, next_params, kappa = ok_res_list[0]
     print("found kappa!!")
     print(kappa)
     return attack(next_params, bobs_public, iteration=iteration+1)
