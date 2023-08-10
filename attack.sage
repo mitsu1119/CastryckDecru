@@ -1,5 +1,5 @@
-from multiprocessing import Pool
 from collections import namedtuple
+import subprocess
 
 load("CDParams.sage")
 load("uvtable.sage")
@@ -124,7 +124,7 @@ def solve_D(params: CDParams, ui, vi, ker_kappa_gen, E1, P1, Q1):
 
     return is_split(C, params.E, Pc, params.P, Qc, params.Q, ai)
 
-KappaChoiceParams = namedtuple("KappaChoiceParams", ("params", "prev_ai", "next_iter_prime", "ui", "vi", "alpha", "beta", "ki", "kappa_buf"))
+KappaChoiceParams = namedtuple("KappaChoiceParams", ("params", "prev_ai", "next_iter_prime", "ui", "vi", "alpha", "beta", "ki"))
 def push_correct_choiced_kappa(kappa_choice_params: KappaChoiceParams):
     params, prev_ai, next_iter_prime, ui, vi, alpha, beta, ki, kappa_buf = kappa_choice_params
 
@@ -163,7 +163,8 @@ def push_correct_choiced_kappa(kappa_choice_params: KappaChoiceParams):
         print("split!!")
         print(f"ki: {next_params.ks}, betas: {next_params.betas}")
         print()
-        kappa_buf.append((kappa, next_params))
+        return (kappa, ki)
+    return None
 
 def attack(params: CDParams, bobs_public: BobsPublic, iteration=1):
     assert len(params.betas) == iteration
@@ -210,6 +211,8 @@ def attack(params: CDParams, bobs_public: BobsPublic, iteration=1):
     # deciding alpha_i, beta_i, ai, bi 
     if iteration == 1:
         alpha, beta, ui, vi = search_alpha_beta(iter_prime)
+        prev_ai = prime.a
+        prev_bi = prime.b
         ai = prime.a - alpha
         bi = prime.b - beta
         assert 2^ai - 3^bi == ui^2 + 4*vi^2
@@ -235,15 +238,26 @@ def attack(params: CDParams, bobs_public: BobsPublic, iteration=1):
     print(f"beta_{iteration}: {beta}")
     next_iter_prime = SIDHPrime(ai, bi, iter_prime.f, proof=False)
 
-    ki = 0
-    kappa_next_params = []
-    while True:
-        push_correct_choiced_kappa((params, prev_ai, next_iter_prime, ui, vi, alpha, beta, ki, kappa_next_params))
-        if len(kappa_next_params) >= 1:
-            break
-        ki += 1
+    ki_max = 3^(prev_bi - bi)
+    kappa_choice_params_file = []
+    for ki in range(ki_max):
+        arguments = (params, prev_ai, next_iter_prime, ui, vi, alpha, beta, ki)
+        save(arguments, f"./temp/kappa_arguments_{ki}")
 
-    assert len(kappa_next_params) != 0
+    max_process = 8
+    proc_list = []
+    for ki in range(ki_max):
+        process = subprocess.Popen(["sage", "search_kappa.sage", f"./temp/kappa_arguments_{ki}"])
+        proc_list.append(process)
+        if (ki + 1) % max_process == 0 or (ki + 1) == ki_max:
+            for subp in proc_list:
+                subp.wait()
+            proc_list = []
+
+    0/0
+
+    res = p.map(push_correct_choiced_kappa, kappa_choice_params)
+
     kappa, next_params = kappa_next_params[0]
     print("found kappa!!")
     print(kappa)
