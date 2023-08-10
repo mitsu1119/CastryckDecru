@@ -159,7 +159,7 @@ def push_correct_choiced_kappa(params: CDParams, prev_ai, next_iter_prime, ui, v
         print("split!!")
         print(f"ki: {next_params.ks}, betas: {next_params.betas}")
         print()
-        kappa_buf.append(next_params)
+        kappa_buf.append((kappa, next_params))
 
 def attack(params: CDParams, bobs_public: BobsPublic, iteration=1):
     assert len(params.betas) == iteration
@@ -171,6 +171,7 @@ def attack(params: CDParams, bobs_public: BobsPublic, iteration=1):
 
     # last step
     if prev_bi <= 3:
+        print()
         print(f"[Last Iteration]")
         print(f"brute force 3^{prev_bi} kappa")
         print(f"betas: {params.betas}")
@@ -195,8 +196,10 @@ def attack(params: CDParams, bobs_public: BobsPublic, iteration=1):
 
     # print the information for iteration
     if iteration == 1:
+        print()
         print("[First Iteration]")
     else:
+        print()
         print(f"[Iteration {iteration}]")
     print(f"target: 2^{prev_ai}, 3^{prev_bi}")
 
@@ -226,7 +229,6 @@ def attack(params: CDParams, bobs_public: BobsPublic, iteration=1):
     print(f"b_{iteration}: {bi}")
     print(f"alpha_{iteration}: {alpha}")
     print(f"beta_{iteration}: {beta}")
-    print()
     next_iter_prime = SIDHPrime(ai, bi, iter_prime.f, proof=False)
 
     ki = 0
@@ -238,5 +240,7 @@ def attack(params: CDParams, bobs_public: BobsPublic, iteration=1):
         ki += 1
 
     assert len(kappa_next_params) != 0
-    next_params = kappa_next_params[0]
+    kappa, next_params = kappa_next_params[0]
+    print("found kappa!!")
+    print(kappa)
     return attack(next_params, bobs_public, iteration=iteration+1)
