@@ -1,3 +1,5 @@
+from concurrent.futures.thread import ThreadPoolExecutor
+
 load("CDParams.sage")
 load("uvtable.sage")
 load("richelot_isogeny.sage")
@@ -110,6 +112,7 @@ def solve_D(params: CDParams, ui, vi, ker_kappa_gen, E1, P1, Q1):
     tilde_kappa_hat = params.E_start.isogeny(ker_tilde_kappa_hat_gen, algorithm="factored")
     C = tilde_kappa_hat.codomain()
     
+    # c-isogeny gamma: E_start -> C
     def gamma(P):
         assert P in params.E_start
         Q = 2^alpha * tilde_kappa_hat(gamma_start(P))
@@ -119,6 +122,44 @@ def solve_D(params: CDParams, ui, vi, ker_kappa_gen, E1, P1, Q1):
     Qc = gamma(params.start_sidh_pub.Qa)
 
     return is_split(C, params.E, Pc, params.P, Qc, params.Q, ai)
+
+def push_correct_choiced_kappa(params: CDParams, prev_ai, next_iter_prime, ui, vi, alpha, beta, ki, kappa_buf):
+    ai = next_iter_prime.a
+    kappa, ker_kappa_gen = choice_kappa(params, beta, ki)
+    E1 = kappa.codomain()
+    assert kappa.domain() == params.E_start
+    assert kappa.degree() == 3^beta
+
+    P1 = kappa(2^alpha * params.start_sidh_pub.Pa)
+    Q1 = kappa(2^alpha * params.start_sidh_pub.Qa)
+    assert P1 in E1
+    assert Q1 in E1
+
+    assert P1.order() == 2^ai
+    assert Q1.order() == 2^ai
+
+    kappa_hat = kappa.dual()
+    assert kappa_hat.domain() == E1
+
+    alpha_diff = prev_ai - ai
+    P_dest = 2^alpha_diff * params.P
+    Q_dest = 2^alpha_diff * params.Q
+
+    assert P_dest in params.E
+    assert Q_dest in params.E
+    assert P_dest.order() == 2^ai
+    assert Q_dest.order() == 2^ai
+    assert P_dest.weil_pairing(Q_dest, 2^ai) != 1
+
+    next_params = CDParams(params.start_sidh_pub, params.E, P_dest, Q_dest, iter_prime=next_iter_prime, betas=params.betas+[beta], ks=params.ks+[ki])
+
+    print(f"test ki = {ki}")
+    if solve_D(next_params, ui, vi, ker_kappa_gen, E1, P1, Q1):
+        print(f"skb = {ki} * 3^{beta}")
+        print("split!!")
+        print(f"ki: {next_params.ks}, betas: {next_params.betas}")
+        print()
+        kappa_buf.append(next_params)
 
 def attack(params: CDParams, bobs_public: BobsPublic, iteration=1):
     assert len(params.betas) == iteration
@@ -189,45 +230,13 @@ def attack(params: CDParams, bobs_public: BobsPublic, iteration=1):
     next_iter_prime = SIDHPrime(ai, bi, iter_prime.f, proof=False)
 
     ki = 0
-
+    kappa_next_params = []
     while True:
-        kappa, ker_kappa_gen = choice_kappa(params, beta, ki)
-        E1 = kappa.codomain()
-        assert kappa.domain() == params.E_start
-        assert kappa.degree() == 3^beta
-        print(kappa)
-        print()
-
-        P1 = kappa(2^alpha * params.start_sidh_pub.Pa)
-        Q1 = kappa(2^alpha * params.start_sidh_pub.Qa)
-        assert P1 in E1
-        assert Q1 in E1
-
-        assert P1.order() == 2^ai
-        assert Q1.order() == 2^ai
-
-        kappa_hat = kappa.dual()
-        assert kappa_hat.domain() == E1
-
-        alpha_diff = prev_ai - ai
-        P_dest = 2^alpha_diff * params.P
-        Q_dest = 2^alpha_diff * params.Q
-
-        assert P_dest in params.E
-        assert Q_dest in params.E
-        assert P_dest.order() == 2^ai
-        assert Q_dest.order() == 2^ai
-        assert P_dest.weil_pairing(Q_dest, 2^ai) != 1
-
-        next_params = CDParams(params.start_sidh_pub, params.E, P_dest, Q_dest, iter_prime=next_iter_prime, betas=params.betas+[beta], ks=params.ks+[ki])
-
-        print(f"test ki = {ki}")
-        if solve_D(next_params, ui, vi, ker_kappa_gen, E1, P1, Q1):
-            print(f"skb = {ki} * 3^{beta}")
-            print("split!!")
-            print(f"ki: {next_params.ks}, betas: {next_params.betas}")
-            print()
+        push_correct_choiced_kappa(params, prev_ai, next_iter_prime, ui, vi, alpha, beta, ki, kappa_next_params)
+        if len(kappa_next_params) >= 1:
             break
         ki += 1
 
+    assert len(kappa_next_params) != 0
+    next_params = kappa_next_params[0]
     return attack(next_params, bobs_public, iteration=iteration+1)
