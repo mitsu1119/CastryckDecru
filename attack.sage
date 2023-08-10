@@ -1,4 +1,5 @@
-from concurrent.futures.thread import ThreadPoolExecutor
+from multiprocessing import Pool
+from collections import namedtuple
 
 load("CDParams.sage")
 load("uvtable.sage")
@@ -123,7 +124,10 @@ def solve_D(params: CDParams, ui, vi, ker_kappa_gen, E1, P1, Q1):
 
     return is_split(C, params.E, Pc, params.P, Qc, params.Q, ai)
 
-def push_correct_choiced_kappa(params: CDParams, prev_ai, next_iter_prime, ui, vi, alpha, beta, ki, kappa_buf):
+KappaChoiceParams = namedtuple("KappaChoiceParams", ("params", "prev_ai", "next_iter_prime", "ui", "vi", "alpha", "beta", "ki", "kappa_buf"))
+def push_correct_choiced_kappa(kappa_choice_params: KappaChoiceParams):
+    params, prev_ai, next_iter_prime, ui, vi, alpha, beta, ki, kappa_buf = kappa_choice_params
+
     ai = next_iter_prime.a
     kappa, ker_kappa_gen = choice_kappa(params, beta, ki)
     E1 = kappa.codomain()
@@ -234,7 +238,7 @@ def attack(params: CDParams, bobs_public: BobsPublic, iteration=1):
     ki = 0
     kappa_next_params = []
     while True:
-        push_correct_choiced_kappa(params, prev_ai, next_iter_prime, ui, vi, alpha, beta, ki, kappa_next_params)
+        push_correct_choiced_kappa((params, prev_ai, next_iter_prime, ui, vi, alpha, beta, ki, kappa_next_params))
         if len(kappa_next_params) >= 1:
             break
         ki += 1
